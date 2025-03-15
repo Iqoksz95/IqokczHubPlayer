@@ -30,32 +30,9 @@ closeButton.Font = Enum.Font.SourceSansBold
 closeButton.TextSize = 20
 closeButton.Parent = mainWindow
 
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 4)
-closeCorner.Parent = closeButton
-
-closeButton.MouseEnter:Connect(function()
-    closeButton.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
-end)
-closeButton.MouseLeave:Connect(function()
-    closeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-end)
-
 closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
-
--- Заголовок
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 0, 30)
-titleLabel.Position = UDim2.new(0, 10, 0, 5)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "IqokczHub - Fly"
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Font = Enum.Font.SourceSansBold
-titleLabel.TextSize = 20
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Parent = mainWindow
 
 -- Поле для ввода скорости
 local speedInput = Instance.new("TextBox")
@@ -68,49 +45,35 @@ speedInput.Font = Enum.Font.SourceSansBold
 speedInput.TextSize = 18
 speedInput.Parent = mainWindow
 
-speedInput.MouseEnter:Connect(function()
-    speedInput.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
-end)
-speedInput.MouseLeave:Connect(function()
-    speedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-end)
-
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 4)
-inputCorner.Parent = speedInput
-
--- Полет, управление, изменение скорости и остановка
+-- Переменные для полета
 local flying = false
-local speed = 20 -- Начальная скорость (1 * 20)
+local speed = 20
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 local userInputService = game:GetService("UserInputService")
-local moveDirection = Vector3.new()
 
 local bg, bv
 
--- Используем встроенный виртуальный джойстик
+-- Функция обновления направления движения
 local function updateMoveDirection()
-    moveDirection = Vector3.new()
-
-    -- Получаем направление движения из встроенного джойстика
     local moveVector = userInputService:GetMoveVector()
-    if moveVector.Magnitude > 0 then
-        local cam = game.Workspace.CurrentCamera.CFrame
-        moveDirection = cam.LookVector * moveVector.Y + cam.RightVector * moveVector.X
+    local cam = game.Workspace.CurrentCamera.CFrame
+    local moveDirection = cam.LookVector * moveVector.Y + cam.RightVector * moveVector.X
+    
+    -- Проверяем, нажата ли кнопка прыжка (вверх)
+    if userInputService:IsKeyDown(Enum.KeyCode.ButtonA) then
+        moveDirection = moveDirection + Vector3.new(0, 1, 0)
     end
+
+    return moveDirection
 end
 
+-- Функция старта полета
 local function startFly()
     if flying then return end
     flying = true
 
-    -- Уничтожаем старые компоненты, если они есть
-    if bg then bg:Destroy() end
-    if bv then bv:Destroy() end
-
-    -- Создаем новые компоненты
     bg = Instance.new("BodyGyro", hrp)
     bg.P = 9e4
     bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
@@ -125,9 +88,9 @@ local function startFly()
     task.spawn(function()
         while flying do
             task.wait()
-            updateMoveDirection()
+            local moveDirection = updateMoveDirection()
             if moveDirection.Magnitude > 0 then
-                bv.Velocity = moveDirection.Unit * speed -- Применяем скорость
+                bv.Velocity = moveDirection.Unit * speed
             else
                 bv.Velocity = Vector3.new(0, 0, 0)
             end
@@ -136,6 +99,7 @@ local function startFly()
     end)
 end
 
+-- Функция остановки полета
 local function stopFly()
     flying = false
     if bv then bv:Destroy() end
@@ -149,17 +113,14 @@ end
 speedInput.FocusLost:Connect(function()
     local newSpeed = tonumber(speedInput.Text)
     if newSpeed and newSpeed > 0 then
-        -- Ограничиваем максимальную скорость до 50 (1000 после умножения)
         if newSpeed > 50 then
             newSpeed = 50
-            speedInput.Text = "50" -- Обновляем текст в поле ввода
+            speedInput.Text = "50"
         end
-        speed = newSpeed * 20 -- Умножаем на 20 (1 -> 20, 2 -> 40, ..., 50 -> 1000)
-        print("Скорость установлена на:", speed) -- Отладочный вывод
+        speed = newSpeed * 20
     else
-        speedInput.Text = "1" -- Если введено некорректное значение, сбрасываем на 1
-        speed = 1 * 20 -- Устанавливаем минимальную скорость (20)
-        print("Скорость сброшена на:", speed) -- Отладочный вывод
+        speedInput.Text = "1"
+        speed = 1 * 20
     end
 end)
 
@@ -176,17 +137,6 @@ startButton.Parent = mainWindow
 
 startButton.MouseButton1Click:Connect(startFly)
 
-startButton.MouseEnter:Connect(function()
-    startButton.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
-end)
-startButton.MouseLeave:Connect(function()
-    startButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-end)
-
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 4)
-inputCorner.Parent = startButton
-
 -- Кнопка остановки
 local stopButton = Instance.new("TextButton")
 stopButton.Size = UDim2.new(0.8, 0, 0, 30)
@@ -200,24 +150,13 @@ stopButton.Parent = mainWindow
 
 stopButton.MouseButton1Click:Connect(stopFly)
 
-stopButton.MouseEnter:Connect(function()
-    stopButton.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
-end)
-stopButton.MouseLeave:Connect(function()
-    stopButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-end)
-
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 4)
-inputCorner.Parent = stopButton
-
--- Обработчик смерти игрока
+-- Остановка полета при смерти
 player.CharacterAdded:Connect(function(newCharacter)
     character = newCharacter
     hrp = character:WaitForChild("HumanoidRootPart")
-    stopFly() -- Отключаем полет при смерти
+    stopFly()
 end)
 
--- Меню сохраняется после смерти
+-- Отключаем сброс GUI при возрождении
 screenGui.ResetOnSpawn = false
 screenGui.Parent = game.CoreGui
