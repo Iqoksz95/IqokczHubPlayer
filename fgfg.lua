@@ -90,59 +90,18 @@ local moveDirection = Vector3.new()
 
 local bg, bv
 
--- Управление джойстиком
-local touchStartPosition = nil
-local touchCurrentPosition = nil
-local touchActive = false
-
-userInputService.TouchStarted:Connect(function(touch)
-    local touchPosition = touch.Position
-    local joystickPosition = joystickFrame.AbsolutePosition
-    local joystickSize = joystickFrame.AbsoluteSize
-
-    -- Проверяем, находится ли касание в пределах джойстика
-    if touchPosition.X >= joystickPosition.X and touchPosition.X <= joystickPosition.X + joystickSize.X and
-       touchPosition.Y >= joystickPosition.Y and touchPosition.Y <= joystickPosition.Y + joystickSize.Y then
-        touchStartPosition = touchPosition
-        touchCurrentPosition = touchPosition
-        touchActive = true
-    end
-end)
-
-userInputService.TouchMoved:Connect(function(touch)
-    if touchActive then
-        touchCurrentPosition = touch.Position
-        local delta = touchCurrentPosition - touchStartPosition
-        local maxDelta = joystickFrame.AbsoluteSize.X / 2
-        local direction = delta / maxDelta
-        direction = Vector2.new(math.clamp(direction.X, -1, 1), math.clamp(direction.Y, -1, 1))
-
-        -- Обновляем позицию джойстика
-        joystickThumb.Position = UDim2.new(0.5, delta.X, 0.5, delta.Y)
-    end
-end)
-
-userInputService.TouchEnded:Connect(function(touch)
-    if touchActive then
-        touchActive = false
-        moveDirection = Vector3.new()
-        joystickThumb.Position = UDim2.new(0.5, -25, 0.5, -25) -- Возвращаем джойстик в центр
-    end
-end)
+-- Используем встроенный виртуальный джойстик
+local virtualJoystick = game:GetService("VirtualInputManager")
 
 local function updateMoveDirection()
-    if not touchActive then
-        moveDirection = Vector3.new()
-        return
+    moveDirection = Vector3.new()
+
+    -- Получаем направление движения из встроенного джойстика
+    local moveVector = userInputService:GetMoveVector()
+    if moveVector.Magnitude > 0 then
+        local cam = game.Workspace.CurrentCamera.CFrame
+        moveDirection = cam.LookVector * moveVector.Y + cam.RightVector * moveVector.X
     end
-
-    local delta = touchCurrentPosition - touchStartPosition
-    local maxDelta = joystickFrame.AbsoluteSize.X / 2
-    local direction = delta / maxDelta
-    direction = Vector2.new(math.clamp(direction.X, -1, 1), math.clamp(direction.Y, -1, 1))
-
-    local cam = game.Workspace.CurrentCamera.CFrame
-    moveDirection = cam.LookVector * -direction.Y + cam.RightVector * direction.X
 end
 
 local function startFly()
