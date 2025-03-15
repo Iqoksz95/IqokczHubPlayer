@@ -134,6 +134,11 @@ local function startFly()
     if flying then return end
     flying = true
 
+    -- Уничтожаем старые компоненты, если они есть
+    if bg then bg:Destroy() end
+    if bv then bv:Destroy() end
+
+    -- Создаем новые компоненты
     bg = Instance.new("BodyGyro", hrp)
     bg.P = 9e4
     bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
