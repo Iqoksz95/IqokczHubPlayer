@@ -90,26 +90,69 @@ local moveDirection = Vector3.new()
 
 local bg, bv
 
--- Управление для мобильных устройств
+-- Виртуальный джойстик
+local joystickFrame = Instance.new("Frame")
+joystickFrame.Name = "JoystickFrame"
+joystickFrame.Size = UDim2.new(0, 150, 0, 150)
+joystickFrame.Position = UDim2.new(0.1, 0, 0.7, 0)
+joystickFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+joystickFrame.BackgroundTransparency = 0.5
+joystickFrame.Parent = screenGui
+
+local joystickCorner = Instance.new("UICorner")
+joystickCorner.CornerRadius = UDim.new(1, 0)
+joystickCorner.Parent = joystickFrame
+
+local joystickThumb = Instance.new("Frame")
+joystickThumb.Name = "JoystickThumb"
+joystickThumb.Size = UDim2.new(0, 50, 0, 50)
+joystickThumb.Position = UDim2.new(0.5, -25, 0.5, -25)
+joystickThumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+joystickThumb.BackgroundTransparency = 0.5
+joystickThumb.Parent = joystickFrame
+
+local joystickThumbCorner = Instance.new("UICorner")
+joystickThumbCorner.CornerRadius = UDim.new(1, 0)
+joystickThumbCorner.Parent = joystickThumb
+
+-- Управление джойстиком
 local touchStartPosition = nil
 local touchCurrentPosition = nil
 local touchActive = false
 
 userInputService.TouchStarted:Connect(function(touch)
-    touchStartPosition = touch.Position
-    touchCurrentPosition = touch.Position
-    touchActive = true
+    local touchPosition = touch.Position
+    local joystickPosition = joystickFrame.AbsolutePosition
+    local joystickSize = joystickFrame.AbsoluteSize
+
+    -- Проверяем, находится ли касание в пределах джойстика
+    if touchPosition.X >= joystickPosition.X and touchPosition.X <= joystickPosition.X + joystickSize.X and
+       touchPosition.Y >= joystickPosition.Y and touchPosition.Y <= joystickPosition.Y + joystickSize.Y then
+        touchStartPosition = touchPosition
+        touchCurrentPosition = touchPosition
+        touchActive = true
+    end
 end)
 
 userInputService.TouchMoved:Connect(function(touch)
     if touchActive then
         touchCurrentPosition = touch.Position
+        local delta = touchCurrentPosition - touchStartPosition
+        local maxDelta = joystickFrame.AbsoluteSize.X / 2
+        local direction = delta / maxDelta
+        direction = Vector2.new(math.clamp(direction.X, -1, 1), math.clamp(direction.Y, -1, 1))
+
+        -- Обновляем позицию джойстика
+        joystickThumb.Position = UDim2.new(0.5, delta.X, 0.5, delta.Y)
     end
 end)
 
 userInputService.TouchEnded:Connect(function(touch)
-    touchActive = false
-    moveDirection = Vector3.new()
+    if touchActive then
+        touchActive = false
+        moveDirection = Vector3.new()
+        joystickThumb.Position = UDim2.new(0.5, -25, 0.5, -25) -- Возвращаем джойстик в центр
+    end
 end)
 
 local function updateMoveDirection()
@@ -119,15 +162,12 @@ local function updateMoveDirection()
     end
 
     local delta = touchCurrentPosition - touchStartPosition
-    local cam = game.Workspace.CurrentCamera.CFrame
+    local maxDelta = joystickFrame.AbsoluteSize.X / 2
+    local direction = delta / maxDelta
+    direction = Vector2.new(math.clamp(direction.X, -1, 1), math.clamp(direction.Y, -1, 1))
 
-    -- Определяем направление движения на основе свайпа
-    if delta.Magnitude > 10 then -- Минимальная длина свайпа для начала движения
-        local direction = delta.Unit
-        moveDirection = cam.LookVector * direction.Y + cam.RightVector * direction.X
-    else
-        moveDirection = Vector3.new()
-    end
+    local cam = game.Workspace.CurrentCamera.CFrame
+    moveDirection = cam.LookVector * -direction.Y + cam.RightVector * direction.X
 end
 
 local function startFly()
