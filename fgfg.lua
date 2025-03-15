@@ -91,8 +91,6 @@ local moveDirection = Vector3.new()
 local bg, bv
 
 -- Используем встроенный виртуальный джойстик
-local virtualJoystick = game:GetService("VirtualInputManager")
-
 local function updateMoveDirection()
     moveDirection = Vector3.new()
 
