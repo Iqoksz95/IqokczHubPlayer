@@ -119,31 +119,32 @@ local function startFly()
     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     bv.Velocity = Vector3.new(0, 0, 0)
 
-    player.Character.Humanoid.PlatformStand = true
+    -- Отключаем PlatformStand, чтобы сохранялось управление
+    player.Character.Humanoid.PlatformStand = false 
 
     task.spawn(function()
         while flying do
             task.wait()
-            
-            -- Используем Humanoid.MoveDirection для мобильного управления
+
+            -- Получаем направление от джойстика (для телефона) или клавиатуры (для ПК)
             local moveVec = player.Character.Humanoid.MoveDirection
 
-            -- Подъём и спуск (настраиваемые кнопки)
+            -- Подъём и спуск (используем кастомные кнопки)
             if userInputService:IsKeyDown(Enum.KeyCode.ButtonR2) then
-                moveVec = moveVec + Vector3.new(0, 1, 0) -- Подъём
+                moveVec = moveVec + Vector3.new(0, 1, 0) -- Вверх
             end
             if userInputService:IsKeyDown(Enum.KeyCode.ButtonL2) then
-                moveVec = moveVec - Vector3.new(0, 1, 0) -- Спуск
+                moveVec = moveVec - Vector3.new(0, 1, 0) -- Вниз
             end
 
-            -- Проверяем, есть ли движение
+            -- Устанавливаем скорость полёта
             if moveVec.Magnitude > 0 then
                 bv.Velocity = moveVec.Unit * speed
             else
                 bv.Velocity = Vector3.new(0, 0, 0)
             end
 
-            -- Фиксация направления камеры
+            -- Поворот персонажа в направлении камеры
             bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
         end
     end)
