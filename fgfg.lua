@@ -198,6 +198,8 @@ speedInput.FocusLost:Connect(function()
     end
 end)
 
+-- Удаляем дублирующиеся объявления кнопок
+
 -- Кнопка старта
 local startButton = Instance.new("TextButton")
 startButton.Size = UDim2.new(0.8, 0, 0, 30)
@@ -209,7 +211,9 @@ startButton.Font = Enum.Font.SourceSansBold
 startButton.TextSize = 18
 startButton.Parent = mainWindow
 
-startButton.MouseButton1Click:Connect(startFly)
+startButton.MouseButton1Click:Connect(function()
+    toggleFly()
+end)
 
 startButton.MouseEnter:Connect(function()
     startButton.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
@@ -233,7 +237,9 @@ stopButton.Font = Enum.Font.SourceSansBold
 stopButton.TextSize = 18
 stopButton.Parent = mainWindow
 
-stopButton.MouseButton1Click:Connect(stopFly)
+stopButton.MouseButton1Click:Connect(function()
+    toggleFly()
+end)
 
 stopButton.MouseEnter:Connect(function()
     stopButton.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
