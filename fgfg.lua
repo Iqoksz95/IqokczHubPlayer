@@ -91,18 +91,58 @@ local movementKeys = {}
 
 local bg, bv
 
-local function updateMoveDirection()
-    local touch = userInputService:GetLastInputType()
-    if touch == Enum.UserInputType.Touch then
-        local touchData = userInputService:GetTouchMovement()
-        if touchData then
-            local direction = Vector3.new(touchData.Delta.X, 0, touchData.Delta.Y)
-            moveDirection = direction.Unit
-        end
-    else
-        moveDirection = Vector3.new()
+-- Функция для обновления направления движения на основе сенсорного ввода
+local function updateMoveDirection(touchInput)
+    local touchPos = touchInput.Position
+    local screenSize = workspace.CurrentCamera.ViewportSize
+    local center = screenSize / 2
+
+    -- Определяем направление свайпа относительно центра экрана
+    local delta = (touchPos - center)
+    moveDirection = Vector3.new(delta.X, 0, delta.Y).Unit
+end
+
+-- Обработчик начала касания
+userInputService.TouchStarted:Connect(function(touchInput, processed)
+    if not processed then
+        updateMoveDirection(touchInput)
+    end
+end)
+
+-- Обработчик перемещения касания
+userInputService.TouchMoved:Connect(function(touchInput, processed)
+    if not processed then
+        updateMoveDirection(touchInput)
+    end
+end)
+
+-- Обработчик окончания касания
+userInputService.TouchEnded:Connect(function(touchInput, processed)
+    if not processed then
+        moveDirection = Vector3.new() -- Сбрасываем направление при отпускании
+    end
+end)
+
+-- Функция для вертикального управления (вверх/вниз)
+local function handleVerticalMovement(touchInput)
+    local touchPos = touchInput.Position
+    local screenSize = workspace.CurrentCamera.ViewportSize
+
+    -- Если касание в верхней части экрана, двигаемся вверх
+    if touchPos.Y < screenSize.Y * 0.3 then
+        moveDirection = moveDirection + Vector3.new(0, 1, 0)
+    -- Если касание в нижней части экрана, двигаемся вниз
+    elseif touchPos.Y > screenSize.Y * 0.7 then
+        moveDirection = moveDirection - Vector3.new(0, 1, 0)
     end
 end
+
+-- Обработчик касания для вертикального управления
+userInputService.TouchStarted:Connect(function(touchInput, processed)
+    if not processed then
+        handleVerticalMovement(touchInput)
+    end
+end)
 
 local function startFly()
     if flying then return end
