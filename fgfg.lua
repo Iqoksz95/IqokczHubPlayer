@@ -119,32 +119,38 @@ local function startFly()
     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     bv.Velocity = Vector3.new(0, 0, 0)
 
-    -- Отключаем PlatformStand, чтобы сохранялось управление
-    player.Character.Humanoid.PlatformStand = false 
+    -- Отключаем анимации ходьбы, чтобы персонаж не бегал
+    player.Character.Humanoid.PlatformStand = true
 
     task.spawn(function()
         while flying do
             task.wait()
 
-            -- Получаем направление от джойстика (для телефона) или клавиатуры (для ПК)
-            local moveVec = player.Character.Humanoid.MoveDirection
+            -- Получаем направление из камеры и джойстика
+            local moveVec = Vector3.new(0, 0, 0)
+            
+            if userInputService.TouchEnabled then
+                -- Для мобильных устройств используем MoveDirection
+                moveVec = (game.Workspace.CurrentCamera.CFrame.LookVector * player.Character.Humanoid.MoveDirection.Z +
+                           game.Workspace.CurrentCamera.CFrame.RightVector * player.Character.Humanoid.MoveDirection.X)
+            end
 
-            -- Подъём и спуск (используем кастомные кнопки)
+            -- Подъём и спуск
             if userInputService:IsKeyDown(Enum.KeyCode.ButtonR2) then
-                moveVec = moveVec + Vector3.new(0, 1, 0) -- Вверх
+                moveVec = moveVec + Vector3.new(0, 1, 0)
             end
             if userInputService:IsKeyDown(Enum.KeyCode.ButtonL2) then
-                moveVec = moveVec - Vector3.new(0, 1, 0) -- Вниз
+                moveVec = moveVec - Vector3.new(0, 1, 0)
             end
 
-            -- Устанавливаем скорость полёта
+            -- Применяем движение
             if moveVec.Magnitude > 0 then
                 bv.Velocity = moveVec.Unit * speed
             else
                 bv.Velocity = Vector3.new(0, 0, 0)
             end
 
-            -- Поворот персонажа в направлении камеры
+            -- Ориентируем персонажа по камере
             bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
         end
     end)
