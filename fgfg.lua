@@ -79,9 +79,9 @@ local inputCorner = Instance.new("UICorner")
 inputCorner.CornerRadius = UDim.new(0, 4)
 inputCorner.Parent = speedInput
 
--- Полет, управление, изменение скорости и остановка
+-- Функции для полета
 local flying = false
-local speed = 20 -- Начальная скорость (1 * 20)
+local speed = 20
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
@@ -90,72 +90,40 @@ local moveDirection = Vector3.new()
 
 local bg, bv
 
--- Функция для обновления направления движения на основе джойстика
-local function updateMoveDirection()
-    local touch = userInputService:GetTouchInput()
-    if touch then
-        local touchPosition = touch.Position
-        local joystick = userInputService:GetTouchJoystick()
-        if joystick then
-            local joystickPosition = joystick.Position
-            local delta = (touchPosition - joystickPosition)
-            moveDirection = Vector3.new(delta.X, 0, delta.Y).Unit
-        end
-    else
-        moveDirection = Vector3.new()
-    end
-end
-
 local function startFly()
     if flying then return end
     flying = true
 
-    -- Отключаем стандартное управление персонажем
-    player.Character.Humanoid.PlatformStand = true
-
-    -- Создаем BodyGyro и BodyVelocity для управления полетом
     bg = Instance.new("BodyGyro", hrp)
     bg.P = 9e4
     bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
     bg.CFrame = hrp.CFrame
 
     bv = Instance.new("BodyVelocity", hrp)
-    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     bv.Velocity = Vector3.new(0, 0, 0)
+    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
 
-    -- Основной цикл полета
-    task.spawn(function()
-        while flying do
-            task.wait()
+    player.Character.Humanoid.PlatformStand = true
 
-            -- Получаем направление движения с джойстика
-            local moveVec = Vector3.new(0, 0, 0)
-
-            if userInputService.TouchEnabled then
-                -- Двигаем персонажа в направлении камеры
-                local cam = game.Workspace.CurrentCamera.CFrame
-                moveVec = (cam.LookVector * moveDirection.Z + cam.RightVector * moveDirection.X)
-            end
-
-            -- Подъём и спуск (виртуальные кнопки)
-            if userInputService:IsKeyDown(Enum.KeyCode.ButtonR2) then
-                moveVec = moveVec + Vector3.new(0, 1, 0) -- Вверх
-            end
-            if userInputService:IsKeyDown(Enum.KeyCode.ButtonL2) then
-                moveVec = moveVec - Vector3.new(0, 1, 0) -- Вниз
-            end
-
-            -- Применяем движение
-            if moveVec.Magnitude > 0 then
-                bv.Velocity = moveVec.Unit * speed
-            else
-                bv.Velocity = Vector3.new(0, 0, 0)
-            end
-
-            -- Поддерживаем направление камеры
-            bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
-        end
+    userInputService.TouchStarted:Connect(function(touch, gameProcessed)
+        if gameProcessed then return end
+        moveDirection = Vector3.new(touch.Position.X, 0, touch.Position.Y).Unit
     end)
+
+    userInputService.TouchEnded:Connect(function(touch, gameProcessed)
+        if gameProcessed then return end
+        moveDirection = Vector3.new()
+    end)
+
+    while flying do
+        wait()
+        if moveDirection.Magnitude > 0 then
+            bv.Velocity = moveDirection * speed
+        else
+            bv.Velocity = Vector3.new(0, 0, 0)
+        end
+        bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
+    end
 end
 
 local function stopFly()
@@ -171,17 +139,10 @@ end
 speedInput.FocusLost:Connect(function()
     local newSpeed = tonumber(speedInput.Text)
     if newSpeed and newSpeed > 0 then
-        -- Ограничиваем максимальную скорость до 50 (1000 после умножения)
-        if newSpeed > 50 then
-            newSpeed = 50
-            speedInput.Text = "50" -- Обновляем текст в поле ввода
-        end
-        speed = newSpeed * 20 -- Умножаем на 20 (1 -> 20, 2 -> 40, ..., 50 -> 1000)
-        print("Скорость установлена на:", speed) -- Отладочный вывод
+        speed = newSpeed * 20
     else
-        speedInput.Text = "1" -- Если введено некорректное значение, сбрасываем на 1
-        speed = 1 * 20 -- Устанавливаем минимальную скорость (20)
-        print("Скорость сброшена на:", speed) -- Отладочный вывод
+        speedInput.Text = "1"
+        speed = 1 * 20
     end
 end)
 
@@ -237,7 +198,7 @@ inputCorner.Parent = stopButton
 player.CharacterAdded:Connect(function(newCharacter)
     character = newCharacter
     hrp = character:WaitForChild("HumanoidRootPart")
-    stopFly() -- Отключаем полет при смерти
+    stopFly()
 end)
 
 -- Меню сохраняется после смерти
