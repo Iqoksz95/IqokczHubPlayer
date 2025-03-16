@@ -198,10 +198,9 @@ speedInput.FocusLost:Connect(function()
     end
 end)
 
--- Удаляем дублирующиеся объявления кнопок
-
 -- Кнопка старта
 local startButton = Instance.new("TextButton")
+startButton.Name = "StartButton"
 startButton.Size = UDim2.new(0.8, 0, 0, 30)
 startButton.Position = UDim2.new(0.1, 0, 0.45, 0)
 startButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -209,7 +208,7 @@ startButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 startButton.Text = "Запустить Fly"
 startButton.Font = Enum.Font.SourceSansBold
 startButton.TextSize = 18
-startButton.Parent = mainWindow
+startButton.Parent = mainWindow -- Убедимся, что кнопка добавляется в mainWindow
 
 startButton.MouseButton1Click:Connect(function()
     toggleFly()
@@ -222,12 +221,13 @@ startButton.MouseLeave:Connect(function()
     startButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 end)
 
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 4)
-inputCorner.Parent = startButton
+local startCorner = Instance.new("UICorner")
+startCorner.CornerRadius = UDim.new(0, 4)
+startCorner.Parent = startButton
 
 -- Кнопка остановки
 local stopButton = Instance.new("TextButton")
+stopButton.Name = "StopButton"
 stopButton.Size = UDim2.new(0.8, 0, 0, 30)
 stopButton.Position = UDim2.new(0.1, 0, 0.65, 0)
 stopButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -235,7 +235,7 @@ stopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 stopButton.Text = "Выключить Fly"
 stopButton.Font = Enum.Font.SourceSansBold
 stopButton.TextSize = 18
-stopButton.Parent = mainWindow
+stopButton.Parent = mainWindow -- Убедимся, что кнопка добавляется в mainWindow
 
 stopButton.MouseButton1Click:Connect(function()
     toggleFly()
@@ -248,9 +248,9 @@ stopButton.MouseLeave:Connect(function()
     stopButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 end)
 
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 4)
-inputCorner.Parent = stopButton
+local stopCorner = Instance.new("UICorner")
+stopCorner.CornerRadius = UDim.new(0, 4)
+stopCorner.Parent = stopButton
 
 -- Обработчик смерти игрока
 player.CharacterAdded:Connect(function(newCharacter)
