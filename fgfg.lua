@@ -92,12 +92,14 @@ local bg, bv
 
 -- Функция для обновления направления движения на основе джойстика
 local function updateMoveDirection()
-    local touch = userInputService:GetLastInputType()
-    if touch == Enum.UserInputType.Touch then
-        local touchData = userInputService:GetTouchMovement()
-        if touchData then
-            local direction = Vector3.new(touchData.Delta.X, 0, touchData.Delta.Y)
-            moveDirection = direction.Unit
+    local touch = userInputService:GetTouchInput()
+    if touch then
+        local touchPosition = touch.Position
+        local joystick = userInputService:GetTouchJoystick()
+        if joystick then
+            local joystickPosition = joystick.Position
+            local delta = (touchPosition - joystickPosition)
+            moveDirection = Vector3.new(delta.X, 0, delta.Y).Unit
         end
     else
         moveDirection = Vector3.new()
