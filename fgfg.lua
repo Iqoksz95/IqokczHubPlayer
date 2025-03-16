@@ -91,34 +91,34 @@ local movementKeys = {}
 
 local bg, bv
 
--- Функция для обновления направления движения на основе сенсорного ввода
-local function updateMoveDirection(touchInput)
-    local touchPos = touchInput.Position
-    local screenSize = workspace.CurrentCamera.ViewportSize
-    local center = screenSize / 2
-
-    -- Определяем направление свайпа относительно центра экрана
-    local delta = (touchPos - center)
-    moveDirection = Vector3.new(delta.X, 0, delta.Y).Unit
-end
+-- Переменные для управления
+local moveDirection = Vector3.new()
+local isTouching = false
 
 -- Обработчик начала касания
 userInputService.TouchStarted:Connect(function(touchInput, processed)
     if not processed then
-        updateMoveDirection(touchInput)
+        isTouching = true
     end
 end)
 
 -- Обработчик перемещения касания
 userInputService.TouchMoved:Connect(function(touchInput, processed)
-    if not processed then
-        updateMoveDirection(touchInput)
+    if not processed and isTouching then
+        local touchPos = touchInput.Position
+        local screenSize = workspace.CurrentCamera.ViewportSize
+        local center = screenSize / 2
+
+        -- Определяем направление свайпа относительно центра экрана
+        local delta = (touchPos - center)
+        moveDirection = Vector3.new(delta.X, 0, delta.Y).Unit
     end
 end)
 
 -- Обработчик окончания касания
 userInputService.TouchEnded:Connect(function(touchInput, processed)
     if not processed then
+        isTouching = false
         moveDirection = Vector3.new() -- Сбрасываем направление при отпускании
     end
 end)
@@ -141,6 +141,21 @@ end
 userInputService.TouchStarted:Connect(function(touchInput, processed)
     if not processed then
         handleVerticalMovement(touchInput)
+    end
+end)
+
+-- Основной цикл полета
+task.spawn(function()
+    while true do
+        if flying then
+            if moveDirection.Magnitude > 0 then
+                bv.Velocity = moveDirection.Unit * speed -- Применяем скорость
+            else
+                bv.Velocity = Vector3.new(0, 0, 0)
+            end
+            bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
+        end
+        task.wait()
     end
 end)
 
