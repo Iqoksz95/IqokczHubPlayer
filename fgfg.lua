@@ -91,65 +91,33 @@ local movementKeys = {}
 
 local bg, bv
 
+-- Подключаем PlayerModule для доступа к виртуальному джойстику
+local PlayerModule = require(game.Players.LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
+local TouchControlModule = PlayerModule:GetControls()
+local VirtualJoystick = TouchControlModule:GetActiveTouchControl()
+
 -- Переменные для управления
 local moveDirection = Vector3.new()
-local isTouching = false
+local isFlying = false
 
--- Обработчик начала касания
-userInputService.TouchStarted:Connect(function(touchInput, processed)
-    if not processed then
-        isTouching = true
-    end
-end)
-
--- Обработчик перемещения касания
-userInputService.TouchMoved:Connect(function(touchInput, processed)
-    if not processed and isTouching then
-        local touchPos = touchInput.Position
-        local screenSize = workspace.CurrentCamera.ViewportSize
-        local center = screenSize / 2
-
-        -- Определяем направление свайпа относительно центра экрана
-        local delta = (touchPos - center)
-        moveDirection = Vector3.new(delta.X, 0, delta.Y).Unit
-    end
-end)
-
--- Обработчик окончания касания
-userInputService.TouchEnded:Connect(function(touchInput, processed)
-    if not processed then
-        isTouching = false
-        moveDirection = Vector3.new() -- Сбрасываем направление при отпускании
-    end
-end)
-
--- Функция для вертикального управления (вверх/вниз)
-local function handleVerticalMovement(touchInput)
-    local touchPos = touchInput.Position
-    local screenSize = workspace.CurrentCamera.ViewportSize
-
-    -- Если касание в верхней части экрана, двигаемся вверх
-    if touchPos.Y < screenSize.Y * 0.3 then
-        moveDirection = moveDirection + Vector3.new(0, 1, 0)
-    -- Если касание в нижней части экрана, двигаемся вниз
-    elseif touchPos.Y > screenSize.Y * 0.7 then
-        moveDirection = moveDirection - Vector3.new(0, 1, 0)
+-- Функция для обновления направления движения на основе виртуального джойстика
+local function updateMoveDirection()
+    if VirtualJoystick and VirtualJoystick.Enabled then
+        local joystickPosition = VirtualJoystick.Position
+        local joystickDelta = joystickPosition - VirtualJoystick.AbsolutePosition
+        moveDirection = Vector3.new(joystickDelta.X, 0, -joystickDelta.Y).Unit
+    else
+        moveDirection = Vector3.new()
     end
 end
-
--- Обработчик касания для вертикального управления
-userInputService.TouchStarted:Connect(function(touchInput, processed)
-    if not processed then
-        handleVerticalMovement(touchInput)
-    end
-end)
 
 -- Основной цикл полета
 task.spawn(function()
     while true do
-        if flying then
+        if isFlying then
+            updateMoveDirection() -- Обновляем направление движения
             if moveDirection.Magnitude > 0 then
-                bv.Velocity = moveDirection.Unit * speed -- Применяем скорость
+                bv.Velocity = moveDirection * speed -- Применяем скорость
             else
                 bv.Velocity = Vector3.new(0, 0, 0)
             end
@@ -158,6 +126,20 @@ task.spawn(function()
         task.wait()
     end
 end)
+
+-- Функция для включения/выключения полета
+local function toggleFly()
+    isFlying = not isFlying
+    if isFlying then
+        startFly()
+    else
+        stopFly()
+    end
+end
+
+-- Кнопка для включения/выключения полета
+startButton.MouseButton1Click:Connect(toggleFly)
+stopButton.MouseButton1Click:Connect(toggleFly)
 
 local function startFly()
     if flying then return end
