@@ -127,10 +127,18 @@ local function startFly()
             updateMoveDirection()
 
             -- Получаем направление из виртуального джойстика
-            local moveVec = game.Workspace.CurrentCamera.CFrame.LookVector * moveDirection.Z
-                         + game.Workspace.CurrentCamera.CFrame.RightVector * moveDirection.X
+            local moveVec = Vector3.new()
 
-            -- Проверяем сенсорные кнопки для подъема и спуска
+            if userInputService.TouchEnabled then
+                -- Управление с мобильного (используем Humanoid.MoveDirection)
+                moveVec = player.Character.Humanoid.MoveDirection
+            else
+                -- Управление с ПК (если нужно)
+                moveVec = game.Workspace.CurrentCamera.CFrame.LookVector * moveDirection.Z
+                         + game.Workspace.CurrentCamera.CFrame.RightVector * moveDirection.X
+            end
+
+            -- Добавляем поддержку подъема и спуска через сенсорные кнопки
             if userInputService:IsKeyDown(Enum.KeyCode.ButtonR2) then
                 moveVec = moveVec + Vector3.new(0, 1, 0) -- Подъём вверх
             end
