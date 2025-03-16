@@ -124,36 +124,26 @@ local function startFly()
     task.spawn(function()
         while flying do
             task.wait()
-            updateMoveDirection()
+            
+            -- Используем Humanoid.MoveDirection для мобильного управления
+            local moveVec = player.Character.Humanoid.MoveDirection
 
-            -- Получаем направление из виртуального джойстика
-            local moveVec = Vector3.new()
-
-            if userInputService.TouchEnabled then
-                -- Управление с мобильного (используем Humanoid.MoveDirection)
-                moveVec = player.Character.Humanoid.MoveDirection
-            else
-                -- Управление с ПК (если нужно)
-                moveVec = game.Workspace.CurrentCamera.CFrame.LookVector * moveDirection.Z
-                         + game.Workspace.CurrentCamera.CFrame.RightVector * moveDirection.X
-            end
-
-            -- Добавляем поддержку подъема и спуска через сенсорные кнопки
+            -- Подъём и спуск (настраиваемые кнопки)
             if userInputService:IsKeyDown(Enum.KeyCode.ButtonR2) then
-                moveVec = moveVec + Vector3.new(0, 1, 0) -- Подъём вверх
+                moveVec = moveVec + Vector3.new(0, 1, 0) -- Подъём
             end
             if userInputService:IsKeyDown(Enum.KeyCode.ButtonL2) then
-                moveVec = moveVec - Vector3.new(0, 1, 0) -- Спуск вниз
+                moveVec = moveVec - Vector3.new(0, 1, 0) -- Спуск
             end
 
-            -- Применяем движение
+            -- Проверяем, есть ли движение
             if moveVec.Magnitude > 0 then
                 bv.Velocity = moveVec.Unit * speed
             else
                 bv.Velocity = Vector3.new(0, 0, 0)
             end
 
-            -- Направление игрока
+            -- Фиксация направления камеры
             bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
         end
     end)
