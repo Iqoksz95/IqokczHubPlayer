@@ -96,8 +96,6 @@ local PlayerModule = require(game.Players.LocalPlayer:WaitForChild("PlayerScript
 local TouchControlModule = PlayerModule:GetControls()
 local VirtualJoystick = TouchControlModule:GetActiveTouchControl()
 
-print("Joystick enabled:", VirtualJoystick and VirtualJoystick.Enabled)
-
 -- Переменные для управления
 local moveDirection = Vector3.new()
 local isFlying = false
@@ -112,8 +110,6 @@ local function updateMoveDirection()
         moveDirection = Vector3.new()
     end
 end
-
-print("Move direction:", moveDirection)
 
 -- Основной цикл полета
 task.spawn(function()
@@ -198,9 +194,21 @@ speedInput.FocusLost:Connect(function()
     end
 end)
 
+-- Обработчики нажатия и отпускания клавиш
+userInputService.InputBegan:Connect(function(input, processed)
+    if not processed then
+        movementKeys[input.KeyCode] = true
+    end
+end)
+
+userInputService.InputEnded:Connect(function(input, processed)
+    if movementKeys[input.KeyCode] then
+        movementKeys[input.KeyCode] = nil
+    end
+end)
+
 -- Кнопка старта
 local startButton = Instance.new("TextButton")
-startButton.Name = "StartButton"
 startButton.Size = UDim2.new(0.8, 0, 0, 30)
 startButton.Position = UDim2.new(0.1, 0, 0.45, 0)
 startButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -208,11 +216,9 @@ startButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 startButton.Text = "Запустить Fly"
 startButton.Font = Enum.Font.SourceSansBold
 startButton.TextSize = 18
-startButton.Parent = mainWindow -- Убедимся, что кнопка добавляется в mainWindow
+startButton.Parent = mainWindow
 
-startButton.MouseButton1Click:Connect(function()
-    toggleFly()
-end)
+startButton.MouseButton1Click:Connect(startFly)
 
 startButton.MouseEnter:Connect(function()
     startButton.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
@@ -221,13 +227,12 @@ startButton.MouseLeave:Connect(function()
     startButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 end)
 
-local startCorner = Instance.new("UICorner")
-startCorner.CornerRadius = UDim.new(0, 4)
-startCorner.Parent = startButton
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 4)
+inputCorner.Parent = startButton
 
 -- Кнопка остановки
 local stopButton = Instance.new("TextButton")
-stopButton.Name = "StopButton"
 stopButton.Size = UDim2.new(0.8, 0, 0, 30)
 stopButton.Position = UDim2.new(0.1, 0, 0.65, 0)
 stopButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -235,11 +240,9 @@ stopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 stopButton.Text = "Выключить Fly"
 stopButton.Font = Enum.Font.SourceSansBold
 stopButton.TextSize = 18
-stopButton.Parent = mainWindow -- Убедимся, что кнопка добавляется в mainWindow
+stopButton.Parent = mainWindow
 
-stopButton.MouseButton1Click:Connect(function()
-    toggleFly()
-end)
+stopButton.MouseButton1Click:Connect(stopFly)
 
 stopButton.MouseEnter:Connect(function()
     stopButton.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
@@ -248,9 +251,9 @@ stopButton.MouseLeave:Connect(function()
     stopButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 end)
 
-local stopCorner = Instance.new("UICorner")
-stopCorner.CornerRadius = UDim.new(0, 4)
-stopCorner.Parent = stopButton
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 4)
+inputCorner.Parent = stopButton
 
 -- Обработчик смерти игрока
 player.CharacterAdded:Connect(function(newCharacter)
@@ -262,6 +265,3 @@ end)
 -- Меню сохраняется после смерти
 screenGui.ResetOnSpawn = false
 screenGui.Parent = game.CoreGui
-
-print("Joystick enabled:", VirtualJoystick and VirtualJoystick.Enabled)
-print("Move direction:", moveDirection)
