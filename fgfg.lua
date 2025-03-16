@@ -110,6 +110,10 @@ local function startFly()
     if flying then return end
     flying = true
 
+    -- Отключаем стандартное управление персонажем
+    player.Character.Humanoid.PlatformStand = true
+
+    -- Создаем BodyGyro и BodyVelocity для управления полетом
     bg = Instance.new("BodyGyro", hrp)
     bg.P = 9e4
     bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
@@ -119,9 +123,7 @@ local function startFly()
     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     bv.Velocity = Vector3.new(0, 0, 0)
 
-    -- Отключаем стандартную физику, чтобы персонаж не падал
-    player.Character.Humanoid.PlatformStand = true
-
+    -- Основной цикл полета
     task.spawn(function()
         while flying do
             task.wait()
@@ -132,8 +134,7 @@ local function startFly()
             if userInputService.TouchEnabled then
                 -- Двигаем персонажа в направлении камеры
                 local cam = game.Workspace.CurrentCamera.CFrame
-                moveVec = (cam.LookVector * player.Character.Humanoid.MoveDirection.Z +
-                           cam.RightVector * player.Character.Humanoid.MoveDirection.X)
+                moveVec = (cam.LookVector * moveDirection.Z + cam.RightVector * moveDirection.X)
             end
 
             -- Подъём и спуск (виртуальные кнопки)
