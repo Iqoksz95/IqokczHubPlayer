@@ -117,6 +117,7 @@ local function startFly()
 
     bv = Instance.new("BodyVelocity", hrp)
     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bv.Velocity = Vector3.new(0, 0, 0)
 
     player.Character.Humanoid.PlatformStand = true
 
@@ -124,8 +125,27 @@ local function startFly()
         while flying do
             task.wait()
             updateMoveDirection()
-            bv.Velocity = (game.Workspace.CurrentCamera.CFrame.LookVector * moveDirection.Z 
-                          + game.Workspace.CurrentCamera.CFrame.RightVector * moveDirection.X) * speed
+
+            -- Получаем направление из виртуального джойстика
+            local moveVec = game.Workspace.CurrentCamera.CFrame.LookVector * moveDirection.Z
+                         + game.Workspace.CurrentCamera.CFrame.RightVector * moveDirection.X
+
+            -- Проверяем сенсорные кнопки для подъема и спуска
+            if userInputService:IsKeyDown(Enum.KeyCode.ButtonR2) then
+                moveVec = moveVec + Vector3.new(0, 1, 0) -- Подъём вверх
+            end
+            if userInputService:IsKeyDown(Enum.KeyCode.ButtonL2) then
+                moveVec = moveVec - Vector3.new(0, 1, 0) -- Спуск вниз
+            end
+
+            -- Применяем движение
+            if moveVec.Magnitude > 0 then
+                bv.Velocity = moveVec.Unit * speed
+            else
+                bv.Velocity = Vector3.new(0, 0, 0)
+            end
+
+            -- Направление игрока
             bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
         end
     end)
