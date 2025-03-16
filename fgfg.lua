@@ -256,3 +256,6 @@ end)
 -- Меню сохраняется после смерти
 screenGui.ResetOnSpawn = false
 screenGui.Parent = game.CoreGui
+
+print("Joystick enabled:", VirtualJoystick and VirtualJoystick.Enabled)
+print("Move direction:", moveDirection)
