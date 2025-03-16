@@ -216,19 +216,6 @@ speedInput.FocusLost:Connect(function()
     end
 end)
 
--- Обработчики нажатия и отпускания клавиш
-userInputService.InputBegan:Connect(function(input, processed)
-    if not processed then
-        movementKeys[input.KeyCode] = true
-    end
-end)
-
-userInputService.InputEnded:Connect(function(input, processed)
-    if movementKeys[input.KeyCode] then
-        movementKeys[input.KeyCode] = nil
-    end
-end)
-
 -- Кнопка старта
 local startButton = Instance.new("TextButton")
 startButton.Size = UDim2.new(0.8, 0, 0, 30)
