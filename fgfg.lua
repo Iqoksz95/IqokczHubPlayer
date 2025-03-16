@@ -79,16 +79,30 @@ local inputCorner = Instance.new("UICorner")
 inputCorner.CornerRadius = UDim.new(0, 4)
 inputCorner.Parent = speedInput
 
--- Функции для полета
+-- Полет, управление, изменение скорости и остановка
 local flying = false
-local speed = 20
+local speed = 20 -- Начальная скорость (1 * 20)
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 local userInputService = game:GetService("UserInputService")
 local moveDirection = Vector3.new()
+local movementKeys = {}
 
 local bg, bv
+
+local function updateMoveDirection()
+    local touch = userInputService:GetLastInputType()
+    if touch == Enum.UserInputType.Touch then
+        local touchData = userInputService:GetTouchMovement()
+        if touchData then
+            local direction = Vector3.new(touchData.Delta.X, 0, touchData.Delta.Y)
+            moveDirection = direction.Unit
+        end
+    else
+        moveDirection = Vector3.new()
+    end
+end
 
 local function startFly()
     if flying then return end
@@ -105,25 +119,18 @@ local function startFly()
 
     player.Character.Humanoid.PlatformStand = true
 
-    userInputService.TouchStarted:Connect(function(touch, gameProcessed)
-        if gameProcessed then return end
-        moveDirection = Vector3.new(touch.Position.X, 0, touch.Position.Y).Unit
-    end)
-
-    userInputService.TouchEnded:Connect(function(touch, gameProcessed)
-        if gameProcessed then return end
-        moveDirection = Vector3.new()
-    end)
-
-    while flying do
-        wait()
-        if moveDirection.Magnitude > 0 then
-            bv.Velocity = moveDirection * speed
-        else
-            bv.Velocity = Vector3.new(0, 0, 0)
+    task.spawn(function()
+        while flying do
+            task.wait()
+            updateMoveDirection()
+            if moveDirection.Magnitude > 0 then
+                bv.Velocity = moveDirection.Unit * speed -- Применяем скорость
+            else
+                bv.Velocity = Vector3.new(0, 0, 0)
+            end
+            bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
         end
-        bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
-    end
+    end)
 end
 
 local function stopFly()
@@ -133,16 +140,37 @@ local function stopFly()
     hrp.Velocity = Vector3.new(0, 0, 0)
     player.Character.Humanoid.PlatformStand = false
     player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+    movementKeys = {}
 end
 
 -- Обработчик ввода скорости
 speedInput.FocusLost:Connect(function()
     local newSpeed = tonumber(speedInput.Text)
     if newSpeed and newSpeed > 0 then
-        speed = newSpeed * 20
+        -- Ограничиваем максимальную скорость до 50 (1000 после умножения)
+        if newSpeed > 50 then
+            newSpeed = 50
+            speedInput.Text = "50" -- Обновляем текст в поле ввода
+        end
+        speed = newSpeed * 20 -- Умножаем на 20 (1 -> 20, 2 -> 40, ..., 50 -> 1000)
+        print("Скорость установлена на:", speed) -- Отладочный вывод
     else
-        speedInput.Text = "1"
-        speed = 1 * 20
+        speedInput.Text = "1" -- Если введено некорректное значение, сбрасываем на 1
+        speed = 1 * 20 -- Устанавливаем минимальную скорость (20)
+        print("Скорость сброшена на:", speed) -- Отладочный вывод
+    end
+end)
+
+-- Обработчики нажатия и отпускания клавиш
+userInputService.InputBegan:Connect(function(input, processed)
+    if not processed then
+        movementKeys[input.KeyCode] = true
+    end
+end)
+
+userInputService.InputEnded:Connect(function(input, processed)
+    if movementKeys[input.KeyCode] then
+        movementKeys[input.KeyCode] = nil
     end
 end)
 
@@ -198,7 +226,7 @@ inputCorner.Parent = stopButton
 player.CharacterAdded:Connect(function(newCharacter)
     character = newCharacter
     hrp = character:WaitForChild("HumanoidRootPart")
-    stopFly()
+    stopFly() -- Отключаем полет при смерти
 end)
 
 -- Меню сохраняется после смерти
