@@ -96,6 +96,8 @@ local PlayerModule = require(game.Players.LocalPlayer:WaitForChild("PlayerScript
 local TouchControlModule = PlayerModule:GetControls()
 local VirtualJoystick = TouchControlModule:GetActiveTouchControl()
 
+print("Joystick enabled:", VirtualJoystick and VirtualJoystick.Enabled)
+
 -- Переменные для управления
 local moveDirection = Vector3.new()
 local isFlying = false
@@ -110,6 +112,8 @@ local function updateMoveDirection()
         moveDirection = Vector3.new()
     end
 end
+
+print("Move direction:", moveDirection)
 
 -- Основной цикл полета
 task.spawn(function()
@@ -136,10 +140,6 @@ local function toggleFly()
         stopFly()
     end
 end
-
--- Кнопка для включения/выключения полета
-startButton.MouseButton1Click:Connect(toggleFly)
-stopButton.MouseButton1Click:Connect(toggleFly)
 
 local function startFly()
     if flying then return end
