@@ -1,4 +1,4 @@
--- Основной скрипт с интегрированным функционалом полета
+-- Основной скрипт с исправленным функционалом полета
 
 -- Создаем ScreenGui
 local screenGui = Instance.new("ScreenGui")
@@ -128,6 +128,8 @@ stopCorner.Parent = stopButton
 -- Логика полета из донорского скрипта
 local flying = false
 local flySpeed = 1
+local bg = nil
+local bv = nil
 
 local function enableFlight(speed)
     local speaker = game.Players.LocalPlayer
@@ -135,66 +137,48 @@ local function enableFlight(speed)
     local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
 
     if hum then
-        hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Landed, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Running, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
-        hum:ChangeState(Enum.HumanoidStateType.Swimming)
+        flying = true
+        hum.PlatformStand = true
 
-        local bg = Instance.new("BodyGyro", chr.PrimaryPart)
+        bg = Instance.new("BodyGyro", chr.PrimaryPart)
         bg.P = 9e4
         bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
         bg.cframe = chr.PrimaryPart.CFrame
-        local bv = Instance.new("BodyVelocity", chr.PrimaryPart)
+
+        bv = Instance.new("BodyVelocity", chr.PrimaryPart)
         bv.velocity = Vector3.new(0, 0.1, 0)
         bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-
-        flying = true
 
         while flying and chr and hum and hum.Parent do
             wait()
             local ctrl = {f = 0, b = 0, l = 0, r = 0}
-            local lastctrl = {f = 0, b = 0, l = 0, r = 0}
-            local maxspeed = speed
+            local moveDir = Vector3.new(0, 0, 0)
 
-            if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
-                flySpeed = flySpeed + 0.5 + (flySpeed / maxspeed)
-                if flySpeed > maxspeed then
-                    flySpeed = maxspeed
-                end
-            elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and flySpeed ~= 0 then
-                flySpeed = flySpeed - 1
-                if flySpeed < 0 then
-                    flySpeed = 0
-                end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
+                ctrl.f = 1
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
+                ctrl.b = -1
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
+                ctrl.l = -1
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
+                ctrl.r = 1
             end
 
-            if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
-                bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f + ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p)) * flySpeed
-                lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
-            elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and flySpeed ~= 0 then
-                bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f + lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l + lastctrl.r, (lastctrl.f + lastctrl.b) * 0.2, 0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p)) * flySpeed
+            moveDir = (game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f + ctrl.b)) + 
+                      ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - 
+                      game.Workspace.CurrentCamera.CoordinateFrame.p)
+
+            if moveDir.Magnitude > 0 then
+                bv.velocity = moveDir * speed
             else
                 bv.velocity = Vector3.new(0, 0, 0)
             end
 
-            bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 50 * flySpeed / maxspeed), 0, 0)
+            bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame
         end
-
-        bg:Destroy()
-        bv:Destroy()
-        hum.PlatformStand = false
     end
 end
 
@@ -205,22 +189,9 @@ local function disableFlight()
     local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
 
     if hum then
-        hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Landed, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Physics, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Running, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics, true)
-        hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
-        hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+        hum.PlatformStand = false
+        if bg then bg:Destroy() end
+        if bv then bv:Destroy() end
     end
 end
 
