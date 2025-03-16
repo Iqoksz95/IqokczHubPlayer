@@ -116,7 +116,6 @@ local function startFly()
     bg.CFrame = hrp.CFrame
 
     bv = Instance.new("BodyVelocity", hrp)
-    bv.Velocity = Vector3.new(0, 0, 0)
     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
 
     player.Character.Humanoid.PlatformStand = true
@@ -125,11 +124,8 @@ local function startFly()
         while flying do
             task.wait()
             updateMoveDirection()
-            if moveDirection.Magnitude > 0 then
-                bv.Velocity = moveDirection * speed -- Применяем скорость
-            else
-                bv.Velocity = Vector3.new(0, 0, 0)
-            end
+            bv.Velocity = (game.Workspace.CurrentCamera.CFrame.LookVector * moveDirection.Z 
+                          + game.Workspace.CurrentCamera.CFrame.RightVector * moveDirection.X) * speed
             bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
         end
     end)
