@@ -1,3 +1,5 @@
+-- Основной скрипт с интегрированным функционалом полета
+
 -- Создаем ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FlyGui"
@@ -79,134 +81,6 @@ local inputCorner = Instance.new("UICorner")
 inputCorner.CornerRadius = UDim.new(0, 4)
 inputCorner.Parent = speedInput
 
--- Полет, управление, изменение скорости и остановка
-local flying = false
-local speed = 20 -- Начальная скорость (1 * 20)
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local hrp = character:WaitForChild("HumanoidRootPart")
-local userInputService = game:GetService("UserInputService")
-local moveDirection = Vector3.new()
-local movementKeys = {}
-
-local bg, bv
-
--- Подключаем PlayerModule для доступа к виртуальному джойстику
-local PlayerModule = require(game.Players.LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
-local TouchControlModule = PlayerModule:GetControls()
-local VirtualJoystick = TouchControlModule:GetActiveTouchControl()
-
--- Переменные для управления
-local moveDirection = Vector3.new()
-local isFlying = false
-
--- Функция для обновления направления движения на основе виртуального джойстика
-local function updateMoveDirection()
-    if VirtualJoystick and VirtualJoystick.Enabled then
-        local joystickPosition = VirtualJoystick.Position
-        local joystickDelta = joystickPosition - VirtualJoystick.AbsolutePosition
-        moveDirection = Vector3.new(joystickDelta.X, 0, -joystickDelta.Y).Unit
-    else
-        moveDirection = Vector3.new()
-    end
-end
-
--- Основной цикл полета
-task.spawn(function()
-    while true do
-        if isFlying then
-            updateMoveDirection() -- Обновляем направление движения
-            if moveDirection.Magnitude > 0 then
-                bv.Velocity = moveDirection * speed -- Применяем скорость
-            else
-                bv.Velocity = Vector3.new(0, 0, 0)
-            end
-            bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
-        end
-        task.wait()
-    end
-end)
-
--- Функция для включения/выключения полета
-local function toggleFly()
-    isFlying = not isFlying
-    if isFlying then
-        startFly()
-    else
-        stopFly()
-    end
-end
-
-local function startFly()
-    if flying then return end
-    flying = true
-
-    bg = Instance.new("BodyGyro", hrp)
-    bg.P = 9e4
-    bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-    bg.CFrame = hrp.CFrame
-
-    bv = Instance.new("BodyVelocity", hrp)
-    bv.Velocity = Vector3.new(0, 0, 0)
-    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-
-    player.Character.Humanoid.PlatformStand = true
-
-    task.spawn(function()
-        while flying do
-            task.wait()
-            updateMoveDirection()
-            if moveDirection.Magnitude > 0 then
-                bv.Velocity = moveDirection.Unit * speed -- Применяем скорость
-            else
-                bv.Velocity = Vector3.new(0, 0, 0)
-            end
-            bg.CFrame = CFrame.new(hrp.Position, hrp.Position + game.Workspace.CurrentCamera.CFrame.LookVector)
-        end
-    end)
-end
-
-local function stopFly()
-    flying = false
-    if bv then bv:Destroy() end
-    if bg then bg:Destroy() end
-    hrp.Velocity = Vector3.new(0, 0, 0)
-    player.Character.Humanoid.PlatformStand = false
-    player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-    movementKeys = {}
-end
-
--- Обработчик ввода скорости
-speedInput.FocusLost:Connect(function()
-    local newSpeed = tonumber(speedInput.Text)
-    if newSpeed and newSpeed > 0 then
-        -- Ограничиваем максимальную скорость до 50 (1000 после умножения)
-        if newSpeed > 50 then
-            newSpeed = 50
-            speedInput.Text = "50" -- Обновляем текст в поле ввода
-        end
-        speed = newSpeed * 20 -- Умножаем на 20 (1 -> 20, 2 -> 40, ..., 50 -> 1000)
-        print("Скорость установлена на:", speed) -- Отладочный вывод
-    else
-        speedInput.Text = "1" -- Если введено некорректное значение, сбрасываем на 1
-        speed = 1 * 20 -- Устанавливаем минимальную скорость (20)
-        print("Скорость сброшена на:", speed) -- Отладочный вывод
-    end
-end)
-
--- Обработчики нажатия и отпускания клавиш
-userInputService.InputBegan:Connect(function(input, processed)
-    if not processed then
-        movementKeys[input.KeyCode] = true
-    end
-end)
-
-userInputService.InputEnded:Connect(function(input, processed)
-    if movementKeys[input.KeyCode] then
-        movementKeys[input.KeyCode] = nil
-    end
-end)
-
 -- Кнопка старта
 local startButton = Instance.new("TextButton")
 startButton.Size = UDim2.new(0.8, 0, 0, 30)
@@ -218,8 +92,6 @@ startButton.Font = Enum.Font.SourceSansBold
 startButton.TextSize = 18
 startButton.Parent = mainWindow
 
-startButton.MouseButton1Click:Connect(startFly)
-
 startButton.MouseEnter:Connect(function()
     startButton.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
 end)
@@ -227,9 +99,9 @@ startButton.MouseLeave:Connect(function()
     startButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 end)
 
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 4)
-inputCorner.Parent = startButton
+local startCorner = Instance.new("UICorner")
+startCorner.CornerRadius = UDim.new(0, 4)
+startCorner.Parent = startButton
 
 -- Кнопка остановки
 local stopButton = Instance.new("TextButton")
@@ -242,8 +114,6 @@ stopButton.Font = Enum.Font.SourceSansBold
 stopButton.TextSize = 18
 stopButton.Parent = mainWindow
 
-stopButton.MouseButton1Click:Connect(stopFly)
-
 stopButton.MouseEnter:Connect(function()
     stopButton.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
 end)
@@ -251,17 +121,122 @@ stopButton.MouseLeave:Connect(function()
     stopButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 end)
 
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 4)
-inputCorner.Parent = stopButton
+local stopCorner = Instance.new("UICorner")
+stopCorner.CornerRadius = UDim.new(0, 4)
+stopCorner.Parent = stopButton
 
--- Обработчик смерти игрока
-player.CharacterAdded:Connect(function(newCharacter)
-    character = newCharacter
-    hrp = character:WaitForChild("HumanoidRootPart")
-    stopFly() -- Отключаем полет при смерти
+-- Логика полета из донорского скрипта
+local flying = false
+local flySpeed = 1
+
+local function enableFlight(speed)
+    local speaker = game.Players.LocalPlayer
+    local chr = speaker.Character
+    local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+
+    if hum then
+        hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Landed, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Running, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+        hum:ChangeState(Enum.HumanoidStateType.Swimming)
+
+        local bg = Instance.new("BodyGyro", chr.PrimaryPart)
+        bg.P = 9e4
+        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bg.cframe = chr.PrimaryPart.CFrame
+        local bv = Instance.new("BodyVelocity", chr.PrimaryPart)
+        bv.velocity = Vector3.new(0, 0.1, 0)
+        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+
+        flying = true
+
+        while flying and chr and hum and hum.Parent do
+            wait()
+            local ctrl = {f = 0, b = 0, l = 0, r = 0}
+            local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+            local maxspeed = speed
+
+            if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+                flySpeed = flySpeed + 0.5 + (flySpeed / maxspeed)
+                if flySpeed > maxspeed then
+                    flySpeed = maxspeed
+                end
+            elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and flySpeed ~= 0 then
+                flySpeed = flySpeed - 1
+                if flySpeed < 0 then
+                    flySpeed = 0
+                end
+            end
+
+            if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+                bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f + ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l + ctrl.r, (ctrl.f + ctrl.b) * 0.2, 0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p)) * flySpeed
+                lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+            elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and flySpeed ~= 0 then
+                bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f + lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l + lastctrl.r, (lastctrl.f + lastctrl.b) * 0.2, 0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p)) * flySpeed
+            else
+                bv.velocity = Vector3.new(0, 0, 0)
+            end
+
+            bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f + ctrl.b) * 50 * flySpeed / maxspeed), 0, 0)
+        end
+
+        bg:Destroy()
+        bv:Destroy()
+        hum.PlatformStand = false
+    end
+end
+
+local function disableFlight()
+    flying = false
+    local speaker = game.Players.LocalPlayer
+    local chr = speaker.Character
+    local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+
+    if hum then
+        hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Landed, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Physics, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Running, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+        hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+    end
+end
+
+startButton.MouseButton1Click:Connect(function()
+    local speed = tonumber(speedInput.Text)
+    if speed and speed >= 1 and speed <= 50 then
+        enableFlight(speed)
+    else
+        speedInput.Text = "Invalid speed"
+    end
 end)
 
--- Меню сохраняется после смерти
+stopButton.MouseButton1Click:Connect(function()
+    disableFlight()
+end)
+
+-- сохраняется после смерти
 screenGui.ResetOnSpawn = false
 screenGui.Parent = game.CoreGui
